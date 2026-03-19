@@ -43,6 +43,7 @@ os.makedirs(CACHE_DIR, exist_ok=True)
 
 class ParseRequest(BaseModel):
     url: HttpUrl
+    sku: str
 
 
 def domain_allowed(url: str) -> bool:
@@ -161,6 +162,7 @@ def parse_html_from_response(response: requests.Response) -> Dict[str, Any]:
 @app.post("/parse")
 def parse_document(req: ParseRequest):
     url = str(req.url)
+    target_sku = req.sku
 
     if not domain_allowed(url):
         return {
@@ -196,6 +198,17 @@ def parse_document(req: ParseRequest):
                 "text": "",
                 "error": f"Unsupported content type: {content_type}",
             }
+
+        # Classification
+        text = result.get("text", "")
+        candidates = re.findall(r'\b[A-Z0-9]{2,}[-/][A-Z0-9]{2,}[-A-Z0-9]*\b', text.upper())
+        unique_candidates = set(candidates)
+        unique_candidates.discard(target_sku.upper())
+
+        result["target_found"] = target_sku.upper() in text.upper()
+        result["multi_model"] = len(unique_candidates) > 3
+        result["detected_siblings"] = ', '.join(unique_candidates)
+        result["target_sku"] = target_sku
 
         output = {
             "source_url": url,
