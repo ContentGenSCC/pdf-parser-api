@@ -201,13 +201,22 @@ def parse_document(req: ParseRequest):
 
         # Classification
         text = result.get("text", "")
-        candidates = re.findall(r'\b[A-Z0-9]{2,}[-/][A-Z0-9]{2,}[-A-Z0-9]*\b', text.upper())
-        unique_candidates = set(candidates)
-        unique_candidates.discard(target_sku.upper())
+
+        prefix_match = re.match(r'^([A-Za-z]{1,4})', target_sku)
+        if prefix_match:
+            prefix = re.escape(prefix_match.group(1))
+            sibling_pattern = re.compile(
+                rf'\b{prefix}[A-Z0-9]{{2,}}(?:[-/][A-Z0-9]+)*\b',
+                re.IGNORECASE
+            )
+            unique_candidates = set(sibling_pattern.findall(text.upper()))
+            unique_candidates.discard(target_sku.upper())
+        else:
+            unique_candidates = set()
 
         result["target_found"] = target_sku.upper() in text.upper()
-        result["multi_model"] = len(unique_candidates) > 3
-        result["detected_siblings"] = ', '.join(unique_candidates)
+        result["multi_model"] = len(unique_candidates) > 0
+        result["detected_siblings"] = ', '.join(sorted(unique_candidates))
         result["target_sku"] = target_sku
 
         output = {
