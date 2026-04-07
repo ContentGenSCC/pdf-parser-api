@@ -22,7 +22,7 @@ ALLOWED_DOMAINS = {
     "delltechnologies.com",
     "hpe.com",
     "www.hpe.com",
-    "dl.dell.com"
+    "dl.dell.com",
     "arubanetworks.com",
     "www.arubanetworks.com",
     "cisco.com",
